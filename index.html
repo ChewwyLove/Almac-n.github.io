@@ -20,6 +20,7 @@
 <body>
   <h1>Gestor de Almacén (Supabase)</h1>
 
+  <!-- Registro -->
   <div class="section">
     <h2>Registro de Entrada</h2>
     <div class="row">
@@ -30,6 +31,7 @@
     </div>
   </div>
 
+  <!-- Historial -->
   <div class="section">
     <details open>
       <summary>Historial de Registros</summary>
@@ -41,10 +43,12 @@
     </details>
   </div>
 
+  <!-- Inventario -->
   <div class="section">
     <details><summary>Inventario</summary><ul id="inventario"></ul></details>
   </div>
 
+  <!-- Catálogo -->
   <div class="section">
     <details><summary>Edición de Precios</summary>
       <div class="row">
@@ -56,104 +60,85 @@
     </details>
   </div>
 
+  <!-- SDK de Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Script principal -->
   <script>
-    const SUPABASE_URL = "https://vviflbcsksnecebtqady.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2aWZsYmNza3NuZWNlYnRxYWR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0NjMzMzMsImV4cCI6MjA3MDAzOTMzM30.5ous_YueIifOJMhNzV6Uap1lex0Ud-d7GoaTZTJ2uX4";
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    window.onload = () => {
+      const SUPABASE_URL = "https://vviflbcsksnecebtqady.supabase.co";
+      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2aWZsYmNza3NuZWNlYnRxYWR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0NjMzMzMsImV4cCI6MjA3MDAzOTMzM30.5ous_YueIifOJMhNzV6Uap1lex0Ud-d7GoaTZTJ2uX4";
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let catalogo = {}, registros = [];
+      const itemSelect = document.getElementById("itemSelect");
+      const tablaBody = document.querySelector("#tablaRegistros tbody");
+      const totalGeneral = document.getElementById("totalGeneral");
+      const inventario = document.getElementById("inventario");
+      const listaObjetos = document.getElementById("listaObjetos");
+      let catalogo = {}, registros = [];
 
-    const itemSelect = document.getElementById("itemSelect");
-    const tablaBody = document.querySelector("#tablaRegistros tbody");
-    const totalGeneral = document.getElementById("totalGeneral");
-    const inventario = document.getElementById("inventario");
-    const listaObjetos = document.getElementById("listaObjetos");
+      async function cargarDatos() {
+        const { data: cat } = await supabase.from('catalogo').select('*');
+        catalogo = {}; cat.forEach(o => catalogo[o.nombre] = o.precio);
 
-    async function cargarDatos() {
-      const { data: cat } = await supabase.from('catalogo').select('*');
-      catalogo = {}; cat.forEach(o => catalogo[o.nombre] = o.precio);
+        const { data: regs } = await supabase.from('registros').select('*').order('fecha', { ascending: false });
+        registros = regs;
+        renderizar();
+      }
 
-      const { data: regs } = await supabase.from('registros').select('*').order('fecha', { ascending: false });
-      registros = regs;
-      renderizar();
-    }
+      async function agregarRegistro() {
+        const nombre = itemSelect.value;
+        const cantidad = parseInt(document.getElementById("cantidad").value);
+        const precioInput = parseFloat(document.getElementById("precio").value);
+        const precio = !isNaN(precioInput) ? precioInput : catalogo[nombre];
+        const fecha = new Date().toISOString();
+        const total = precio * cantidad;
+        if (!nombre || isNaN(cantidad) || cantidad <= 0 || isNaN(precio)) {
+          alert("❌ Error: Completa todos los campos");
+          return;
+        }
+        const { error } = await supabase.from('registros').insert([{ nombre, cantidad, precio, fecha, total }]);
+        if (error) alert("❌ Error Supabase: " + error.message);
+        else {
+          alert("✔ Registro añadido con éxito");
+          await cargarDatos();
+        }
+      }
 
-    async function agregarRegistro() {
-      const nombre = itemSelect.value;
-      const cantidad = parseInt(document.getElementById("cantidad").value);
-      const precioInput = parseFloat(document.getElementById("precio").value);
-      const precio = !isNaN(precioInput) ? precioInput : catalogo[nombre];
-      const fecha = new Date().toISOString();
-      const total = precio * cantidad;
-      if (!nombre || isNaN(cantidad) || cantidad <= 0 || isNaN(precio)) return;
+      async function agregarObjeto() {
+        const nombre = document.getElementById("nuevoObjeto").value.trim();
+        const precio = parseFloat(document.getElementById("precioDefault").value);
+        if (!nombre || isNaN(precio) || precio <= 0) {
+          alert("❌ Error: Completa nombre y precio");
+          return;
+        }
+        const { error } = await supabase.from('catalogo').insert([{ nombre, precio }]);
+        if (error) alert("❌ Error Supabase: " + error.message);
+        else {
+          alert("✔ Objeto añadido con éxito");
+          document.getElementById("nuevoObjeto").value = "";
+          document.getElementById("precioDefault").value = "";
+          await cargarDatos();
+        }
+      }
 
-      await supabase.from('registros').insert([{ nombre, cantidad, precio, fecha, total }]);
-      await cargarDatos();
-    }
+      function renderizar() {
+        tablaBody.innerHTML = "";
+        let suma = 0;
+        registros.forEach(r => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${r.nombre}</td><td>${r.cantidad}</td><td>$${r.precio}</td><td>${new Date(r.fecha).toLocaleString()}</td><td>$${r.total}</td>
+            <td><button onclick="eliminarRegistro(${r.id})">Eliminar</button></td>`;
+          tablaBody.appendChild(tr);
+          suma += r.total;
+        });
+        totalGeneral.textContent = suma.toFixed(2);
+      }
 
-    async function eliminarRegistro(id) {
-      await supabase.from('registros').delete().eq('id', id);
-      await cargarDatos();
-    }
-
-    async function agregarObjeto() {
-      const nombre = document.getElementById("nuevoObjeto").value.trim();
-      const precio = parseFloat(document.getElementById("precioDefault").value);
-      if (!nombre || isNaN(precio) || precio <= 0) return;
-
-      await supabase.from('catalogo').insert([{ nombre, precio }]);
-      document.getElementById("nuevoObjeto").value = "";
-      document.getElementById("precioDefault").value = "";
-      await cargarDatos();
-    }
-
-    async function eliminarObjeto(nombre) {
-      await supabase.from('catalogo').delete().eq('nombre', nombre);
-      await cargarDatos();
-    }
-
-    function renderizar() {
-      tablaBody.innerHTML = "";
-      let suma = 0;
-      registros.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${r.nombre}</td><td>${r.cantidad}</td><td>$${r.precio}</td><td>${new Date(r.fecha).toLocaleString()}</td><td>$${r.total}</td>
-          <td><button class="btn" onclick="eliminarRegistro(${r.id})">Eliminar</button></td>`;
-        tablaBody.appendChild(tr);
-        suma += r.total;
-      });
-      totalGeneral.textContent = suma.toFixed(2);
-
-      const conteo = {};
-      registros.forEach(r => conteo[r.nombre] = (conteo[r.nombre] || 0) + r.cantidad);
-      inventario.innerHTML = "";
-      Object.entries(conteo).sort().forEach(([o, c]) => {
-        const li = document.createElement("li");
-        li.textContent = `${o}: ${c} unidades`;
-        inventario.appendChild(li);
-      });
-
-      listaObjetos.innerHTML = "";
-      Object.entries(catalogo).sort().forEach(([nombre, precio]) => {
-        const li = document.createElement("li");
-        li.innerHTML = `${nombre} - $${precio} <button class="btn" onclick="eliminarObjeto('${nombre}')">Eliminar</button>`;
-        listaObjetos.appendChild(li);
-      });
-
-      actualizarSelect();
-    }
-
-    function actualizarSelect() {
-      itemSelect.innerHTML = "";
-      Object.keys(catalogo).sort().forEach(o => {
-        const opt = document.createElement("option");
-        opt.value = o; opt.textContent = o;
-        itemSelect.appendChild(opt);
-      });
-    }
-
-    cargarDatos();
+      window.agregarRegistro = agregarRegistro;
+      window.agregarObjeto = agregarObjeto;
+      cargarDatos();
+    };
   </script>
 </body>
 </html>
