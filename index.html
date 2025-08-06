@@ -3,64 +3,174 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestor de Almacén (Supabase)</title>
+  <title>Gestor de Almacén</title>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #1f1f1f; color: #fff; padding: 2rem; }
-    h2 { margin-top: 2rem; color: #00ffc3; }
-    select, input, button { margin: .3rem; padding: .5rem; border-radius: 5px; border: none; }
-    input, select { min-width: 150px; }
-    .section { background: #2c2c2c; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; }
-    .row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
-    .btn { background: #00ffc3; color: black; font-weight: bold; cursor: pointer; }
-    table { width: 100%; margin-top: 1rem; border-collapse: collapse; }
-    th, td { border: 1px solid #444; padding: .5rem; text-align: center; }
-    summary { cursor: pointer; font-weight: bold; color: #00ffc3; margin-bottom: .5rem; }
+    :root {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --accent: #00ffc3;
+      --text: #f5f5f5;
+      --text-muted: #b3b3b3;
+      --danger: #ff4d4d;
+    }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 1rem;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: var(--accent);
+    }
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .card {
+      background: var(--card);
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    }
+    .card h2 {
+      margin-bottom: .8rem;
+      color: var(--accent);
+      font-size: 1.3rem;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin-bottom: .5rem;
+    }
+    input, select {
+      padding: .6rem;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #2c2c2c;
+      color: var(--text);
+      flex: 1;
+      min-width: 140px;
+    }
+    .btn {
+      background: var(--accent);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      padding: .6rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+    .btn:hover {
+      background: #00e0ad;
+    }
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+    .btn-danger:hover {
+      background: #e60000;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: .8rem;
+    }
+    th, td {
+      padding: .6rem;
+      text-align: center;
+      border-bottom: 1px solid #333;
+    }
+    th {
+      color: var(--accent);
+      font-weight: bold;
+    }
+    tr:nth-child(even) {
+      background: #2a2a2a;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    ul li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: .4rem 0;
+      border-bottom: 1px solid #333;
+    }
+    ul li span {
+      color: var(--text-muted);
+    }
+    .status {
+      margin-top: .5rem;
+      font-size: .9rem;
+      color: var(--text-muted);
+    }
+    @media(max-width: 600px) {
+      .row { flex-direction: column; }
+      table { font-size: .9rem; }
+    }
   </style>
 </head>
 <body>
-  <h1>Gestor de Almacén (Supabase)</h1>
-
-  <!-- Registro -->
-  <div class="section">
-    <h2>Registro de Entrada</h2>
-    <div class="row">
-      <select id="itemSelect"></select>
-      <input type="number" id="cantidad" placeholder="Cantidad" />
-      <input type="number" id="precio" placeholder="Precio (opcional)" />
-      <button class="btn" onclick="agregarRegistro()">Añadir</button>
+  <h1>📦 Gestor de Almacén</h1>
+  <div class="container">
+    <!-- Registro -->
+    <div class="card">
+      <h2>Registrar Entrada</h2>
+      <div class="row">
+        <select id="itemSelect"></select>
+        <input type="number" id="cantidad" placeholder="Cantidad" />
+        <input type="number" id="precio" placeholder="Precio (opcional)" />
+        <button class="btn" onclick="agregarRegistro()">Añadir</button>
+      </div>
+      <p class="status" id="statusRegistro"></p>
     </div>
-  </div>
 
-  <!-- Historial -->
-  <div class="section">
-    <details open>
-      <summary>Historial de Registros</summary>
-      <table id="tablaRegistros">
-        <thead><tr><th>Objeto</th><th>Cantidad</th><th>Precio</th><th>Fecha</th><th>Total</th><th>Acción</th></tr></thead>
-        <tbody></tbody>
-      </table>
+    <!-- Historial -->
+    <div class="card">
+      <h2>Historial de Registros</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Objeto</th><th>Cantidad</th><th>Precio</th><th>Fecha</th><th>Total</th><th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tablaRegistros"></tbody>
+        </table>
+      </div>
       <p><strong>Total General: $<span id="totalGeneral">0</span></strong></p>
-    </details>
-  </div>
+    </div>
 
-  <!-- Inventario -->
-  <div class="section">
-    <details><summary>Inventario</summary><ul id="inventario"></ul></details>
-  </div>
+    <!-- Inventario -->
+    <div class="card">
+      <h2>Inventario</h2>
+      <ul id="inventario"></ul>
+    </div>
 
-  <!-- Catálogo -->
-  <div class="section">
-    <details><summary>Edición de Precios</summary>
+    <!-- Catálogo -->
+    <div class="card">
+      <h2>Catálogo de Precios</h2>
       <div class="row">
         <input type="text" id="nuevoObjeto" placeholder="Nombre del objeto" />
         <input type="number" id="precioDefault" placeholder="Precio por defecto" />
-        <button class="btn" onclick="agregarObjeto()">Añadir objeto</button>
+        <button class="btn" onclick="agregarObjeto()">Añadir</button>
       </div>
       <ul id="listaObjetos"></ul>
-    </details>
+    </div>
   </div>
 
-  <!-- SDK de Supabase -->
+  <!-- SDK Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
@@ -70,17 +180,17 @@
       const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
       const itemSelect = document.getElementById("itemSelect");
-      const tablaBody = document.querySelector("#tablaRegistros tbody");
+      const tablaBody = document.getElementById("tablaRegistros");
       const totalGeneral = document.getElementById("totalGeneral");
       const inventario = document.getElementById("inventario");
       const listaObjetos = document.getElementById("listaObjetos");
+      const statusRegistro = document.getElementById("statusRegistro");
       let catalogo = {}, registros = [];
 
       async function cargarDatos() {
         const { data: cat } = await supabase.from('catalogo').select('*');
         catalogo = {};
         cat.forEach(o => catalogo[o.nombre] = o.precio);
-
         const { data: regs } = await supabase.from('registros').select('*').order('fecha', { ascending: false });
         registros = regs;
         renderizar();
@@ -91,10 +201,12 @@
         const cantidad = parseInt(document.getElementById("cantidad").value);
         const precioInput = parseFloat(document.getElementById("precio").value);
         const precio = !isNaN(precioInput) ? precioInput : catalogo[nombre];
+        if (!nombre || isNaN(cantidad) || cantidad <= 0 || isNaN(precio)) return;
         const fecha = new Date().toISOString();
         const total = precio * cantidad;
-        if (!nombre || isNaN(cantidad) || cantidad <= 0 || isNaN(precio)) return;
         await supabase.from('registros').insert([{ nombre, cantidad, precio, fecha, total }]);
+        statusRegistro.textContent = "Registro añadido ✓";
+        setTimeout(() => statusRegistro.textContent = "", 2000);
         await cargarDatos();
       }
 
@@ -119,39 +231,44 @@
       }
 
       function renderizar() {
-        // Tabla de registros
+        // Historial
         tablaBody.innerHTML = "";
         let suma = 0;
         registros.forEach(r => {
           const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${r.nombre}</td><td>${r.cantidad}</td><td>$${r.precio}</td><td>${new Date(r.fecha).toLocaleString()}</td><td>$${r.total}</td>
-            <td><button class="btn" onclick="eliminarRegistro(${r.id})">Eliminar</button></td>`;
+          tr.innerHTML = `
+            <td>${r.nombre}</td>
+            <td>${r.cantidad}</td>
+            <td>$${r.precio}</td>
+            <td>${new Date(r.fecha).toLocaleString()}</td>
+            <td>$${r.total}</td>
+            <td><button class="btn btn-danger" onclick="eliminarRegistro(${r.id})">X</button></td>`;
           tablaBody.appendChild(tr);
           suma += r.total;
         });
         totalGeneral.textContent = suma.toFixed(2);
 
         // Inventario
+        inventario.innerHTML = "";
         const conteo = {};
         registros.forEach(r => conteo[r.nombre] = (conteo[r.nombre] || 0) + r.cantidad);
-        inventario.innerHTML = "";
-        Object.entries(conteo).sort().forEach(([o, c]) => {
+        Object.entries(conteo).forEach(([o, c]) => {
           const li = document.createElement("li");
           li.textContent = `${o}: ${c} unidades`;
           inventario.appendChild(li);
         });
 
-        // Lista de objetos con botón eliminar
+        // Catálogo
         listaObjetos.innerHTML = "";
-        Object.entries(catalogo).sort().forEach(([nombre, precio]) => {
+        Object.entries(catalogo).forEach(([nombre, precio]) => {
           const li = document.createElement("li");
-          li.innerHTML = `${nombre} - $${precio} <button class="btn" onclick="eliminarObjeto('${nombre}')">Eliminar</button>`;
+          li.innerHTML = `${nombre} - <span>$${precio}</span> <button class="btn btn-danger" onclick="eliminarObjeto('${nombre}')">Eliminar</button>`;
           listaObjetos.appendChild(li);
         });
 
-        // Select de objetos
+        // Select
         itemSelect.innerHTML = "";
-        Object.keys(catalogo).sort().forEach(o => {
+        Object.keys(catalogo).forEach(o => {
           const opt = document.createElement("option");
           opt.value = o;
           opt.textContent = o;
@@ -159,7 +276,6 @@
         });
       }
 
-      // Exponer funciones globalmente
       window.agregarRegistro = agregarRegistro;
       window.agregarObjeto = agregarObjeto;
       window.eliminarObjeto = eliminarObjeto;
