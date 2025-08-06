@@ -63,7 +63,6 @@
   <!-- SDK de Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Script principal -->
   <script>
     window.onload = () => {
       const SUPABASE_URL = "https://vviflbcsksnecebtqady.supabase.co";
@@ -78,12 +77,22 @@
       let catalogo = {}, registros = [];
 
       async function cargarDatos() {
-        const { data: cat } = await supabase.from('catalogo').select('*');
-        catalogo = {}; cat.forEach(o => catalogo[o.nombre] = o.precio);
+        const { data: cat, error: errorCat } = await supabase.from('catalogo').select('*');
+        if (errorCat) {
+          console.error("Error cargando catálogo:", errorCat.message);
+          return;
+        }
+        catalogo = {};
+        cat.forEach(o => catalogo[o.nombre] = o.precio);
 
-        const { data: regs } = await supabase.from('registros').select('*').order('fecha', { ascending: false });
+        const { data: regs, error: errorRegs } = await supabase.from('registros').select('*').order('fecha', { ascending: false });
+        if (errorRegs) {
+          console.error("Error cargando registros:", errorRegs.message);
+          return;
+        }
         registros = regs;
         renderizar();
+        console.log("Datos cargados:", { catalogo, registros });
       }
 
       async function agregarRegistro() {
@@ -94,13 +103,13 @@
         const fecha = new Date().toISOString();
         const total = precio * cantidad;
         if (!nombre || isNaN(cantidad) || cantidad <= 0 || isNaN(precio)) {
-          alert("❌ Error: Completa todos los campos");
+          console.warn("Campos incompletos al agregar registro");
           return;
         }
         const { error } = await supabase.from('registros').insert([{ nombre, cantidad, precio, fecha, total }]);
-        if (error) alert("❌ Error Supabase: " + error.message);
+        if (error) console.error("Error agregando registro:", error.message);
         else {
-          alert("✔ Registro añadido con éxito");
+          console.log(`Registro añadido: ${nombre}, Cantidad: ${cantidad}, Precio: ${precio}`);
           await cargarDatos();
         }
       }
@@ -109,13 +118,13 @@
         const nombre = document.getElementById("nuevoObjeto").value.trim();
         const precio = parseFloat(document.getElementById("precioDefault").value);
         if (!nombre || isNaN(precio) || precio <= 0) {
-          alert("❌ Error: Completa nombre y precio");
+          console.warn("Campos incompletos al agregar objeto");
           return;
         }
         const { error } = await supabase.from('catalogo').insert([{ nombre, precio }]);
-        if (error) alert("❌ Error Supabase: " + error.message);
+        if (error) console.error("Error agregando objeto:", error.message);
         else {
-          alert("✔ Objeto añadido con éxito");
+          console.log(`Objeto añadido: ${nombre}, Precio: ${precio}`);
           document.getElementById("nuevoObjeto").value = "";
           document.getElementById("precioDefault").value = "";
           await cargarDatos();
@@ -123,20 +132,48 @@
       }
 
       function renderizar() {
+        // Tabla de registros
         tablaBody.innerHTML = "";
         let suma = 0;
         registros.forEach(r => {
           const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${r.nombre}</td><td>${r.cantidad}</td><td>$${r.precio}</td><td>${new Date(r.fecha).toLocaleString()}</td><td>$${r.total}</td>
-            <td><button onclick="eliminarRegistro(${r.id})">Eliminar</button></td>`;
+          tr.innerHTML = `<td>${r.nombre}</td><td>${r.cantidad}</td><td>$${r.precio}</td><td>${new Date(r.fecha).toLocaleString()}</td><td>$${r.total}</td>`;
           tablaBody.appendChild(tr);
           suma += r.total;
         });
         totalGeneral.textContent = suma.toFixed(2);
+
+        // Inventario
+        const conteo = {};
+        registros.forEach(r => conteo[r.nombre] = (conteo[r.nombre] || 0) + r.cantidad);
+        inventario.innerHTML = "";
+        Object.entries(conteo).sort().forEach(([o, c]) => {
+          const li = document.createElement("li");
+          li.textContent = `${o}: ${c} unidades`;
+          inventario.appendChild(li);
+        });
+
+        // Lista de objetos
+        listaObjetos.innerHTML = "";
+        Object.entries(catalogo).sort().forEach(([nombre, precio]) => {
+          const li = document.createElement("li");
+          li.textContent = `${nombre} - $${precio}`;
+          listaObjetos.appendChild(li);
+        });
+
+        // Select de objetos
+        itemSelect.innerHTML = "";
+        Object.keys(catalogo).sort().forEach(o => {
+          const opt = document.createElement("option");
+          opt.value = o;
+          opt.textContent = o;
+          itemSelect.appendChild(opt);
+        });
       }
 
       window.agregarRegistro = agregarRegistro;
       window.agregarObjeto = agregarObjeto;
+
       cargarDatos();
     };
   </script>
