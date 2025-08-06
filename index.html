@@ -9,9 +9,11 @@
       --bg: #121212;
       --card: #1e1e1e;
       --accent: #00ffc3;
+      --accent-hover: #00e0ad;
       --text: #f5f5f5;
       --text-muted: #b3b3b3;
       --danger: #ff4d4d;
+      --danger-hover: #e60000;
     }
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
@@ -68,16 +70,12 @@
       cursor: pointer;
       transition: 0.3s ease;
     }
-    .btn:hover {
-      background: #00e0ad;
-    }
+    .btn:hover { background: var(--accent-hover); }
     .btn-danger {
       background: var(--danger);
       color: #fff;
     }
-    .btn-danger:hover {
-      background: #e60000;
-    }
+    .btn-danger:hover { background: var(--danger-hover); }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -92,9 +90,7 @@
       color: var(--accent);
       font-weight: bold;
     }
-    tr:nth-child(even) {
-      background: #2a2a2a;
-    }
+    tr:nth-child(even) { background: #2a2a2a; }
     ul {
       list-style: none;
       padding: 0;
@@ -107,9 +103,7 @@
       padding: .4rem 0;
       border-bottom: 1px solid #333;
     }
-    ul li span {
-      color: var(--text-muted);
-    }
+    ul li span { color: var(--text-muted); }
     .status {
       margin-top: .5rem;
       font-size: .9rem;
@@ -124,26 +118,37 @@
 <body>
   <h1>📦 Gestor de Almacén</h1>
   <div class="container">
-    <!-- Registro -->
+    <!-- Registro Entrada -->
     <div class="card">
       <h2>Registrar Entrada</h2>
       <div class="row">
-        <select id="itemSelect"></select>
-        <input type="number" id="cantidad" placeholder="Cantidad" />
-        <input type="number" id="precio" placeholder="Precio (opcional)" />
+        <select id="itemSelectEntrada"></select>
+        <input type="number" id="cantidadEntrada" placeholder="Cantidad" />
+        <input type="number" id="precioEntrada" placeholder="Precio (opcional)" />
         <button class="btn" onclick="agregarRegistro()">Añadir</button>
       </div>
-      <p class="status" id="statusRegistro"></p>
+      <p class="status" id="statusEntrada"></p>
+    </div>
+
+    <!-- Retirar Stock -->
+    <div class="card">
+      <h2>Retirar Stock</h2>
+      <div class="row">
+        <select id="itemSelectRetiro"></select>
+        <input type="number" id="cantidadRetiro" placeholder="Cantidad a retirar" />
+        <button class="btn btn-danger" onclick="retirarStock()">Retirar</button>
+      </div>
+      <p class="status" id="statusRetiro"></p>
     </div>
 
     <!-- Historial -->
     <div class="card">
-      <h2>Historial de Registros</h2>
+      <h2>Historial de Movimientos</h2>
       <div style="overflow-x:auto;">
         <table>
           <thead>
             <tr>
-              <th>Objeto</th><th>Cantidad</th><th>Precio</th><th>Fecha</th><th>Total</th><th>Acción</th>
+              <th>Movimiento</th><th>Cantidad</th><th>Precio</th><th>Fecha</th><th>Total</th><th>Acción</th>
             </tr>
           </thead>
           <tbody id="tablaRegistros"></tbody>
@@ -179,34 +184,59 @@
       const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2aWZsYmNza3NuZWNlYnRxYWR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0NjMzMzMsImV4cCI6MjA3MDAzOTMzM30.5ous_YueIifOJMhNzV6Uap1lex0Ud-d7GoaTZTJ2uX4";
       const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-      const itemSelect = document.getElementById("itemSelect");
+      const itemSelectEntrada = document.getElementById("itemSelectEntrada");
+      const itemSelectRetiro = document.getElementById("itemSelectRetiro");
       const tablaBody = document.getElementById("tablaRegistros");
       const totalGeneral = document.getElementById("totalGeneral");
       const inventario = document.getElementById("inventario");
       const listaObjetos = document.getElementById("listaObjetos");
-      const statusRegistro = document.getElementById("statusRegistro");
+      const statusEntrada = document.getElementById("statusEntrada");
+      const statusRetiro = document.getElementById("statusRetiro");
       let catalogo = {}, registros = [];
 
       async function cargarDatos() {
         const { data: cat } = await supabase.from('catalogo').select('*');
         catalogo = {};
         cat.forEach(o => catalogo[o.nombre] = o.precio);
+
         const { data: regs } = await supabase.from('registros').select('*').order('fecha', { ascending: false });
         registros = regs;
         renderizar();
       }
 
       async function agregarRegistro() {
-        const nombre = itemSelect.value;
-        const cantidad = parseInt(document.getElementById("cantidad").value);
-        const precioInput = parseFloat(document.getElementById("precio").value);
+        const nombre = itemSelectEntrada.value;
+        const cantidad = parseInt(document.getElementById("cantidadEntrada").value);
+        const precioInput = parseFloat(document.getElementById("precioEntrada").value);
         const precio = !isNaN(precioInput) ? precioInput : catalogo[nombre];
         if (!nombre || isNaN(cantidad) || cantidad <= 0 || isNaN(precio)) return;
         const fecha = new Date().toISOString();
         const total = precio * cantidad;
-        await supabase.from('registros').insert([{ nombre, cantidad, precio, fecha, total }]);
-        statusRegistro.textContent = "Registro añadido ✓";
-        setTimeout(() => statusRegistro.textContent = "", 2000);
+        await supabase.from('registros').insert([{ nombre, cantidad, precio, fecha, total, tipo: 'entrada' }]);
+        statusEntrada.textContent = "Entrada registrada ✓";
+        setTimeout(() => statusEntrada.textContent = "", 2000);
+        await cargarDatos();
+      }
+
+      async function retirarStock() {
+        const nombre = itemSelectRetiro.value;
+        const cantidad = parseInt(document.getElementById("cantidadRetiro").value);
+        if (!nombre || isNaN(cantidad) || cantidad <= 0) return;
+
+        // Verificar stock disponible
+        const disponible = registros.filter(r => r.nombre === nombre).reduce((sum, r) => sum + r.cantidad, 0);
+        if (cantidad > disponible) {
+          statusRetiro.textContent = "No hay suficiente stock";
+          setTimeout(() => statusRetiro.textContent = "", 2000);
+          return;
+        }
+
+        const precio = catalogo[nombre];
+        const fecha = new Date().toISOString();
+        const total = precio * -cantidad;
+        await supabase.from('registros').insert([{ nombre, cantidad: -cantidad, precio, fecha, total, tipo: 'retiro' }]);
+        statusRetiro.textContent = "Retiro realizado ✓";
+        setTimeout(() => statusRetiro.textContent = "", 2000);
         await cargarDatos();
       }
 
@@ -235,9 +265,10 @@
         tablaBody.innerHTML = "";
         let suma = 0;
         registros.forEach(r => {
+          const tipoTexto = r.tipo === 'retiro' ? `Retiro: ${r.nombre}` : r.nombre;
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td>${r.nombre}</td>
+            <td>${tipoTexto}</td>
             <td>${r.cantidad}</td>
             <td>$${r.precio}</td>
             <td>${new Date(r.fecha).toLocaleString()}</td>
@@ -266,17 +297,20 @@
           listaObjetos.appendChild(li);
         });
 
-        // Select
-        itemSelect.innerHTML = "";
-        Object.keys(catalogo).forEach(o => {
-          const opt = document.createElement("option");
-          opt.value = o;
-          opt.textContent = o;
-          itemSelect.appendChild(opt);
+        // Selects
+        [itemSelectEntrada, itemSelectRetiro].forEach(select => {
+          select.innerHTML = "";
+          Object.keys(catalogo).forEach(o => {
+            const opt = document.createElement("option");
+            opt.value = o;
+            opt.textContent = o;
+            select.appendChild(opt);
+          });
         });
       }
 
       window.agregarRegistro = agregarRegistro;
+      window.retirarStock = retirarStock;
       window.agregarObjeto = agregarObjeto;
       window.eliminarObjeto = eliminarObjeto;
       window.eliminarRegistro = eliminarRegistro;
