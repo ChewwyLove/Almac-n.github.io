@@ -77,22 +77,13 @@
       let catalogo = {}, registros = [];
 
       async function cargarDatos() {
-        const { data: cat, error: errorCat } = await supabase.from('catalogo').select('*');
-        if (errorCat) {
-          console.error("Error cargando catálogo:", errorCat.message);
-          return;
-        }
+        const { data: cat } = await supabase.from('catalogo').select('*');
         catalogo = {};
         cat.forEach(o => catalogo[o.nombre] = o.precio);
 
-        const { data: regs, error: errorRegs } = await supabase.from('registros').select('*').order('fecha', { ascending: false });
-        if (errorRegs) {
-          console.error("Error cargando registros:", errorRegs.message);
-          return;
-        }
+        const { data: regs } = await supabase.from('registros').select('*').order('fecha', { ascending: false });
         registros = regs;
         renderizar();
-        console.log("Datos cargados:", { catalogo, registros });
       }
 
       async function agregarRegistro() {
@@ -102,33 +93,29 @@
         const precio = !isNaN(precioInput) ? precioInput : catalogo[nombre];
         const fecha = new Date().toISOString();
         const total = precio * cantidad;
-        if (!nombre || isNaN(cantidad) || cantidad <= 0 || isNaN(precio)) {
-          console.warn("Campos incompletos al agregar registro");
-          return;
-        }
-        const { error } = await supabase.from('registros').insert([{ nombre, cantidad, precio, fecha, total }]);
-        if (error) console.error("Error agregando registro:", error.message);
-        else {
-          console.log(`Registro añadido: ${nombre}, Cantidad: ${cantidad}, Precio: ${precio}`);
-          await cargarDatos();
-        }
+        if (!nombre || isNaN(cantidad) || cantidad <= 0 || isNaN(precio)) return;
+        await supabase.from('registros').insert([{ nombre, cantidad, precio, fecha, total }]);
+        await cargarDatos();
       }
 
       async function agregarObjeto() {
         const nombre = document.getElementById("nuevoObjeto").value.trim();
         const precio = parseFloat(document.getElementById("precioDefault").value);
-        if (!nombre || isNaN(precio) || precio <= 0) {
-          console.warn("Campos incompletos al agregar objeto");
-          return;
-        }
-        const { error } = await supabase.from('catalogo').insert([{ nombre, precio }]);
-        if (error) console.error("Error agregando objeto:", error.message);
-        else {
-          console.log(`Objeto añadido: ${nombre}, Precio: ${precio}`);
-          document.getElementById("nuevoObjeto").value = "";
-          document.getElementById("precioDefault").value = "";
-          await cargarDatos();
-        }
+        if (!nombre || isNaN(precio) || precio <= 0) return;
+        await supabase.from('catalogo').insert([{ nombre, precio }]);
+        document.getElementById("nuevoObjeto").value = "";
+        document.getElementById("precioDefault").value = "";
+        await cargarDatos();
+      }
+
+      async function eliminarObjeto(nombre) {
+        await supabase.from('catalogo').delete().eq('nombre', nombre);
+        await cargarDatos();
+      }
+
+      async function eliminarRegistro(id) {
+        await supabase.from('registros').delete().eq('id', id);
+        await cargarDatos();
       }
 
       function renderizar() {
@@ -137,7 +124,8 @@
         let suma = 0;
         registros.forEach(r => {
           const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${r.nombre}</td><td>${r.cantidad}</td><td>$${r.precio}</td><td>${new Date(r.fecha).toLocaleString()}</td><td>$${r.total}</td>`;
+          tr.innerHTML = `<td>${r.nombre}</td><td>${r.cantidad}</td><td>$${r.precio}</td><td>${new Date(r.fecha).toLocaleString()}</td><td>$${r.total}</td>
+            <td><button class="btn" onclick="eliminarRegistro(${r.id})">Eliminar</button></td>`;
           tablaBody.appendChild(tr);
           suma += r.total;
         });
@@ -153,11 +141,11 @@
           inventario.appendChild(li);
         });
 
-        // Lista de objetos
+        // Lista de objetos con botón eliminar
         listaObjetos.innerHTML = "";
         Object.entries(catalogo).sort().forEach(([nombre, precio]) => {
           const li = document.createElement("li");
-          li.textContent = `${nombre} - $${precio}`;
+          li.innerHTML = `${nombre} - $${precio} <button class="btn" onclick="eliminarObjeto('${nombre}')">Eliminar</button>`;
           listaObjetos.appendChild(li);
         });
 
@@ -171,8 +159,11 @@
         });
       }
 
+      // Exponer funciones globalmente
       window.agregarRegistro = agregarRegistro;
       window.agregarObjeto = agregarObjeto;
+      window.eliminarObjeto = eliminarObjeto;
+      window.eliminarRegistro = eliminarRegistro;
 
       cargarDatos();
     };
