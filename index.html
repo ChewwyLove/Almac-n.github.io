@@ -104,8 +104,15 @@
       align-items: center;
       padding: .4rem 0;
       border-bottom: 1px solid #333;
+      gap: 1rem;
     }
-    ul li span { color: var(--text-muted); }
+    .cat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+    .cat-item span { flex: 1; text-align: center; color: var(--text-muted); }
     .status {
       margin-top: .5rem;
       font-size: .9rem;
@@ -239,7 +246,7 @@
         if (!nombre || isNaN(cantidad) || cantidad <= 0 || isNaN(precio)) return;
         const fecha = new Date().toISOString();
         const total = precio * cantidad;
-        await supabase.from('registros').insert([{ nombre, cantidad, precio, fecha, total, tipo: 'entrada' }]);
+        await supabase.from('registros').insert([{ nombre, cantidad, precio, fecha, total }]);
         statusEntrada.textContent = "Entrada registrada ✓";
         setTimeout(() => statusEntrada.textContent = "", 2000);
         await cargarDatos();
@@ -260,7 +267,7 @@
         const precio = catalogo[nombre];
         const fecha = new Date().toISOString();
         const total = precio * -cantidad;
-        await supabase.from('registros').insert([{ nombre, cantidad: -cantidad, precio, fecha, total, tipo: 'retiro' }]);
+        await supabase.from('registros').insert([{ nombre, cantidad: -cantidad, precio, fecha, total }]);
         statusRetiro.textContent = "Retiro realizado ✓";
         setTimeout(() => statusRetiro.textContent = "", 2000);
         await cargarDatos();
@@ -291,8 +298,9 @@
         tablaBody.innerHTML = "";
         let sumaEntradas = 0, sumaRetiros = 0;
         registros.forEach(r => {
-          const tipoTexto = r.tipo === 'retiro' ? `⬇ Retiro: ${r.nombre}` : `⬆ Entrada: ${r.nombre}`;
-          const clase = r.tipo === 'retiro' ? 'retiro' : 'entrada';
+          const esRetiro = r.cantidad < 0;
+          const tipoTexto = esRetiro ? `⬇ Retiro: ${r.nombre}` : `⬆ Entrada: ${r.nombre}`;
+          const clase = esRetiro ? 'retiro' : 'entrada';
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td class="${clase}">${tipoTexto}</td>
@@ -302,7 +310,7 @@
             <td>$${r.total}</td>
             <td><button class="btn btn-danger" onclick="eliminarRegistro(${r.id})">X</button></td>`;
           tablaBody.appendChild(tr);
-          if (r.tipo === 'retiro') sumaRetiros += Math.abs(r.total);
+          if (esRetiro) sumaRetiros += Math.abs(r.total);
           else sumaEntradas += r.total;
         });
         totalEntradas.textContent = sumaEntradas.toFixed(2);
@@ -326,7 +334,12 @@
         listaObjetos.innerHTML = "";
         Object.entries(catalogo).forEach(([nombre, precio]) => {
           const li = document.createElement("li");
-          li.innerHTML = `${nombre} - <span>$${precio}</span> <button class="btn btn-danger" onclick="eliminarObjeto('${nombre}')">Eliminar</button>`;
+          li.innerHTML = `
+            <div class="cat-item">
+              <span style="flex:2;text-align:left;">${nombre}</span>
+              <span style="flex:1;">$${precio}</span>
+              <button class="btn btn-danger" style="flex:0;" onclick="eliminarObjeto('${nombre}')">Eliminar</button>
+            </div>`;
           listaObjetos.appendChild(li);
         });
 
