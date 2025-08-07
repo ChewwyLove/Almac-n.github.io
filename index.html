@@ -1,13 +1,13 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestor de Almacén PRO</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Inter', sans-serif;
       background: #121212;
       color: #f5f5f5;
       margin: 0;
@@ -68,15 +68,6 @@
     th { color: #00ffc3; }
     .entrada { color: #00e676; font-weight: bold; }
     .retiro { color: #ff4d4d; font-weight: bold; }
-    .cat-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: .4rem 0;
-      border-bottom: 1px solid #333;
-    }
-    .cat-item span { flex: 1; text-align: center; color: #b3b3b3; }
-    .status { font-size: .9rem; color: #b3b3b3; margin-top: .5rem; }
     .resumen {
       display: flex;
       justify-content: space-between;
@@ -90,32 +81,15 @@
   <h1>📦 Gestor de Almacén PRO</h1>
   <div class="container">
     <div class="card">
-      <h2>Registrar Entrada</h2>
-      <div class="row">
-        <select id="itemSelectEntrada"></select>
-        <input type="number" id="cantidadEntrada" placeholder="Cantidad" />
-        <input type="number" id="precioEntrada" placeholder="Precio (opcional)" />
-        <button onclick="agregarRegistro()">➕ Añadir</button>
-      </div>
-      <p class="status" id="statusEntrada"></p>
-    </div>
-
-    <div class="card">
-      <h2>Retirar Stock</h2>
-      <div class="row">
-        <select id="itemSelectRetiro"></select>
-        <input type="number" id="cantidadRetiro" placeholder="Cantidad a retirar" />
-        <button class="btn-danger" onclick="retirarStock()">⬇ Retirar</button>
-      </div>
-      <p class="status" id="statusRetiro"></p>
-    </div>
-
-    <div class="card">
       <h2>Historial</h2>
       <table>
         <thead>
           <tr>
-            <th>Movimiento</th><th>Cantidad</th><th>Precio</th><th>Fecha</th><th>Total</th>
+            <th>Movimiento</th>
+            <th>Cantidad</th>
+            <th>Precio</th>
+            <th>Fecha</th>
+            <th>Total</th>
           </tr>
         </thead>
         <tbody id="tablaRegistros"></tbody>
@@ -126,31 +100,21 @@
         <span>Balance: $<span id="balanceFinal">0,00</span></span>
       </div>
     </div>
-
-    <div class="card">
-      <h2>Catálogo de Precios</h2>
-      <input type="text" id="nuevoObjeto" placeholder="Nombre del objeto" />
-      <input type="number" id="precioDefault" placeholder="Precio por defecto" />
-      <button onclick="agregarObjeto()">➕ Añadir</button>
-      <ul id="listaObjetos"></ul>
-    </div>
   </div>
 
   <script>
-    // Lógica simulada para visual
     const tablaRegistros = document.getElementById("tablaRegistros");
     const totalEntradas = document.getElementById("totalEntradas");
     const totalRetiros = document.getElementById("totalRetiros");
     const balanceFinal = document.getElementById("balanceFinal");
-    const listaObjetos = document.getElementById("listaObjetos");
 
-    const datosSimulados = [
-      { nombre: "Tornillos", cantidad: 10, precio: 50, fecha: new Date(), total: 500 },
-      { nombre: "Clavos", cantidad: -5, precio: 30, fecha: new Date(), total: -150 }
+    const registros = [
+      { nombre: "Tornillos", cantidad: 10, precio: 12.5, fecha: new Date(), total: 125 },
+      { nombre: "Clavos", cantidad: -5, precio: 8.99, fecha: new Date(), total: -44.95 }
     ];
 
-    let entradas = 0, retiros = 0;
-    datosSimulados.forEach(r => {
+    let sumaEntradas = 0, sumaRetiros = 0;
+    registros.forEach(r => {
       const row = document.createElement("tr");
       const esRetiro = r.cantidad < 0;
       const tipo = esRetiro ? "⬇ Retiro" : "⬆ Entrada";
@@ -168,23 +132,14 @@
         <td>$${Math.abs(r.total).toFixed(2).replace('.', ',')}</td>
       `;
       tablaRegistros.appendChild(row);
-      esRetiro ? retiros += Math.abs(r.total) : entradas += r.total;
+
+      if (esRetiro) sumaRetiros += Math.abs(r.total);
+      else sumaEntradas += r.total;
     });
 
-    totalEntradas.textContent = entradas.toFixed(2).replace('.', ',');
-    totalRetiros.textContent = retiros.toFixed(2).replace('.', ',');
-    balanceFinal.textContent = (entradas - retiros).toFixed(2).replace('.', ',');
-
-    const objetos = { "Tornillos": 50, "Clavos": 30 };
-    for (const [obj, precio] of Object.entries(objetos)) {
-      const li = document.createElement("li");
-      li.className = "cat-item";
-      li.innerHTML = `
-        <span style="text-align:left;">${obj}</span>
-        <span>$${precio.toFixed(2).replace('.', ',')}</span>
-        <button class="btn-danger">Eliminar</button>`;
-      listaObjetos.appendChild(li);
-    }
+    totalEntradas.textContent = sumaEntradas.toFixed(2).replace('.', ',');
+    totalRetiros.textContent = sumaRetiros.toFixed(2).replace('.', ',');
+    balanceFinal.textContent = (sumaEntradas - sumaRetiros).toFixed(2).replace('.', ',');
   </script>
 </body>
 </html>
