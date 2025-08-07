@@ -305,9 +305,9 @@
           tr.innerHTML = `
             <td class="${clase}">${tipoTexto}</td>
             <td>${r.cantidad}</td>
-            <td>$${r.precio}</td>
+            <td>$${r.precio.toFixed(2)}</td>
             <td>${new Date(r.fecha).toLocaleString()}</td>
-            <td>$${r.total}</td>
+            <td>$${r.total.toFixed(2)}</td>
             <td><button class="btn btn-danger" onclick="eliminarRegistro(${r.id})">X</button></td>`;
           tablaBody.appendChild(tr);
           if (esRetiro) sumaRetiros += Math.abs(r.total);
@@ -337,7 +337,7 @@
           li.innerHTML = `
             <div class="cat-item">
               <span style="flex:2;text-align:left;">${nombre}</span>
-              <span style="flex:1;">$${precio}</span>
+              <span style="flex:1;">$${precio.toFixed(2)}</span>
               <button class="btn btn-danger" style="flex:0;" onclick="eliminarObjeto('${nombre}')">Eliminar</button>
             </div>`;
           listaObjetos.appendChild(li);
