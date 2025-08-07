@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestor de Almacén PRO</title>
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Gestor de Almacén PRO</title>
+<style>
     :root {
       --bg: #121212;
       --card: #1e1e1e;
@@ -144,73 +145,67 @@
   </style>
 </head>
 <body>
-  <h1>📦 Gestor de Almacén PRO</h1>
-  <div class="container">
-    <!-- Entrada -->
-    <div class="card">
-      <h2>Registrar Entrada</h2>
-      <div class="row">
-        <select id="itemSelectEntrada"></select>
-        <input type="number" id="cantidadEntrada" placeholder="Cantidad" />
-        <input type="number" id="precioEntrada" placeholder="Precio (opcional)" />
-        <button class="btn" onclick="agregarRegistro()">➕ Añadir</button>
-      </div>
-      <p class="status" id="statusEntrada"></p>
-    </div>
-
-    <!-- Retiro -->
-    <div class="card">
-      <h2>Retirar Stock</h2>
-      <div class="row">
-        <select id="itemSelectRetiro"></select>
-        <input type="number" id="cantidadRetiro" placeholder="Cantidad a retirar" />
-        <button class="btn btn-danger" onclick="retirarStock()">⬇ Retirar</button>
-      </div>
-      <p class="status" id="statusRetiro"></p>
-    </div>
-
-    <!-- Historial -->
-    <div class="card">
-      <h2>Historial de Movimientos</h2>
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Movimiento</th><th>Cantidad</th><th>Precio</th><th>Fecha</th><th>Total</th><th>Acción</th>
-            </tr>
-          </thead>
-          <tbody id="tablaRegistros"></tbody>
-        </table>
-      </div>
-      <div class="resumen">
-        <span>Entradas: <span id="totalEntradas">$0.00</span></span>
-        <span>Retiros: <span id="totalRetiros">$0.00</span></span>
-        <span>Balance: <span id="balanceFinal">$0.00</span></span>
-      </div>
-    </div>
-
-    <!-- Inventario -->
-    <div class="card">
-      <h2>Inventario</h2>
-      <ul id="inventario"></ul>
-    </div>
-
-    <!-- Catálogo -->
-    <div class="card">
-      <h2>Catálogo de Precios</h2>
-      <div class="row">
-        <input type="text" id="nuevoObjeto" placeholder="Nombre del objeto" />
-        <input type="number" id="precioDefault" placeholder="Precio por defecto" />
-        <button class="btn" onclick="agregarObjeto()">➕ Añadir</button>
-      </div>
-      <ul id="listaObjetos"></ul>
-    </div>
-  </div>
-
-  <!-- SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <script>
+<h1>📦 Gestor de Almacén PRO</h1>
+<div class="container">
+<!-- Entrada -->
+<div class="card">
+<h2>Registrar Entrada</h2>
+<div class="row">
+<select id="itemSelectEntrada"></select>
+<input id="cantidadEntrada" placeholder="Cantidad" type="number"/>
+<input id="precioEntrada" placeholder="Precio (opcional)" type="number"/>
+<button class="btn" onclick="agregarRegistro()">➕ Añadir</button>
+</div>
+<p class="status" id="statusEntrada"></p>
+</div>
+<!-- Retiro -->
+<div class="card">
+<h2>Retirar Stock</h2>
+<div class="row">
+<select id="itemSelectRetiro"></select>
+<input id="cantidadRetiro" placeholder="Cantidad a retirar" type="number"/>
+<button class="btn btn-danger" onclick="retirarStock()">⬇ Retirar</button>
+</div>
+<p class="status" id="statusRetiro"></p>
+</div>
+<!-- Historial -->
+<div class="card">
+<h2>Historial de Movimientos</h2>
+<div style="overflow-x:auto;">
+<table>
+<thead>
+<tr>
+<th>Movimiento</th><th>Cantidad</th><th>Precio</th><th>Fecha</th><th>Total</th><th>Acción</th>
+</tr>
+</thead>
+<tbody id="tablaRegistros"></tbody>
+</table>
+</div>
+<div class="resumen">
+<span>Entradas: <span id="totalEntradas">$0.00</span></span>
+<span>Retiros: <span id="totalRetiros">$0.00</span></span>
+<span>Balance: <span id="balanceFinal">$0.00</span></span>
+</div>
+</div>
+<!-- Inventario -->
+<div class="card">
+<h2>Inventario</h2>
+<ul id="inventario"></ul>
+</div>
+<!-- Catálogo -->
+<div class="card">
+<h2>Catálogo de Precios</h2>
+<div class="row">
+<input id="nuevoObjeto" placeholder="Nombre del objeto" type="text"/>
+<input id="precioDefault" placeholder="Precio por defecto" type="number"/>
+<button class="btn" onclick="agregarObjeto()">➕ Añadir</button>
+</div>
+<ul id="listaObjetos"></ul>
+</div>
+</div>
+<!-- SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
     window.onload = () => {
       const SUPABASE_URL = "https://vviflbcsksnecebtqady.supabase.co";
       const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2aWZsYmNza3NuZWNlYnRxYWR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0NjMzMzMsImV4cCI6MjA3MDAzOTMzM30.5ous_YueIifOJMhNzV6Uap1lex0Ud-d7GoaTZTJ2uX4";
@@ -306,7 +301,7 @@
             <td class="${clase}">${tipoTexto}</td>
             <td>${r.cantidad}</td>
             <td>$${r.precio.toFixed(2)}</td>
-            <td>${new Date(r.fecha).toLocaleString()}</td>
+            <td>${new Date(r.fecha).toLocaleDateString()}</td>
             <td>${r.total.toLocaleString("en-US", { style: "currency", currency: "USD" })}</td>
             <td><button class="btn btn-danger" onclick="eliminarRegistro(${r.id})">X</button></td>`;
           tablaBody.appendChild(tr);
