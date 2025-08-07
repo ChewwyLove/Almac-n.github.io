@@ -67,40 +67,35 @@
 <body>
   <h1>📦 Gestor de Almacén PRO</h1>
   <div class="container">
-
-    <!-- Entrada -->
     <div class="card">
       <h2>Registrar Entrada</h2>
       <div class="row">
         <select id="itemSelectEntrada"></select>
         <input type="number" id="cantidadEntrada" placeholder="Cantidad" />
         <input type="number" id="precioEntrada" placeholder="Precio (opcional)" />
-        <button onclick="agregarRegistro()">➕ Añadir</button>
+        <button id="btnAgregar">➕ Añadir</button>
       </div>
       <p id="statusEntrada"></p>
     </div>
 
-    <!-- Retiro -->
     <div class="card">
       <h2>Retirar Stock</h2>
       <div class="row">
         <select id="itemSelectRetiro"></select>
         <input type="number" id="cantidadRetiro" placeholder="Cantidad a retirar" />
-        <button class="btn-danger" onclick="retirarStock()">⬇ Retirar</button>
+        <button class="btn-danger" id="btnRetirar">⬇ Retirar</button>
       </div>
       <p id="statusRetiro"></p>
     </div>
 
-    <!-- Gráfico -->
     <div class="card">
       <h2>📈 Gráfico de Movimientos</h2>
       <canvas id="graficoMovimientos" height="120"></canvas>
     </div>
 
-    <!-- Historial -->
     <div class="card">
       <h2>Historial de Movimientos</h2>
-      <button onclick="exportarCSV()">📄 Exportar CSV</button>
+      <button id="btnExportar">📄 Exportar CSV</button>
       <div style="overflow-x:auto;">
         <table>
           <thead>
@@ -114,23 +109,20 @@
       <p>Entradas: <span id="totalEntradas">$0</span> | Retiros: <span id="totalRetiros">$0</span> | Balance: <span id="balanceFinal">$0</span></p>
     </div>
 
-    <!-- Inventario -->
     <div class="card">
       <h2>Inventario</h2>
       <ul id="inventario"></ul>
     </div>
 
-    <!-- Catálogo -->
     <div class="card">
       <h2>Catálogo de Precios</h2>
       <div class="row">
         <input type="text" id="nuevoObjeto" placeholder="Nombre del objeto" />
         <input type="number" id="precioDefault" placeholder="Precio por defecto" />
-        <button onclick="agregarObjeto()">➕ Añadir</button>
+        <button id="btnAgregarObjeto">➕ Añadir</button>
       </div>
       <ul id="listaObjetos"></ul>
     </div>
-
   </div>
 
   <script>
@@ -140,11 +132,11 @@
 
     function exportarCSV() {
       const filas = document.querySelectorAll('#tablaRegistros tr');
-      let csv = 'Movimiento,Cantidad,Precio,Fecha,Total\\n';
+      let csv = 'Movimiento,Cantidad,Precio,Fecha,Total\n';
       filas.forEach(fila => {
         const celdas = fila.querySelectorAll('td');
         const datos = Array.from(celdas).map(td => td.textContent.trim()).join(',');
-        if (datos) csv += datos + '\\n';
+        if (datos) csv += datos + '\n';
       });
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
@@ -155,18 +147,30 @@
       URL.revokeObjectURL(url);
     }
 
-    // Funciones vacías a completar con Supabase o localStorage
     function agregarRegistro() {
-      alert('Función agregarRegistro() aún no implementada');
+      document.getElementById("statusEntrada").textContent = "Registro agregado (función demo).";
     }
 
     function retirarStock() {
-      alert('Función retirarStock() aún no implementada');
+      document.getElementById("statusRetiro").textContent = "Stock retirado (función demo).";
     }
 
     function agregarObjeto() {
-      alert('Función agregarObjeto() aún no implementada');
+      const nombre = document.getElementById("nuevoObjeto").value.trim();
+      const precio = parseFloat(document.getElementById("precioDefault").value);
+      if (nombre && !isNaN(precio)) {
+        const li = document.createElement("li");
+        li.textContent = `${nombre} - ${formatearMoneda(precio)}`;
+        document.getElementById("listaObjetos").appendChild(li);
+        document.getElementById("nuevoObjeto").value = "";
+        document.getElementById("precioDefault").value = "";
+      }
     }
+
+    document.getElementById("btnAgregar").addEventListener("click", agregarRegistro);
+    document.getElementById("btnRetirar").addEventListener("click", retirarStock);
+    document.getElementById("btnExportar").addEventListener("click", exportarCSV);
+    document.getElementById("btnAgregarObjeto").addEventListener("click", agregarObjeto);
   </script>
 </body>
 </html>
