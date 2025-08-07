@@ -183,9 +183,9 @@
         </table>
       </div>
       <div class="resumen">
-        <span>Entradas: $<span id="totalEntradas">0</span></span>
-        <span>Retiros: $<span id="totalRetiros">0</span></span>
-        <span>Balance: $<span id="balanceFinal">0</span></span>
+        <span>Entradas: <span id="totalEntradas">$0.00</span></span>
+        <span>Retiros: <span id="totalRetiros">$0.00</span></span>
+        <span>Balance: <span id="balanceFinal">$0.00</span></span>
       </div>
     </div>
 
@@ -307,15 +307,15 @@
             <td>${r.cantidad}</td>
             <td>$${r.precio.toFixed(2)}</td>
             <td>${new Date(r.fecha).toLocaleString()}</td>
-            <td>$${r.total.toFixed(2)}</td>
+            <td>${r.total.toLocaleString("en-US", { style: "currency", currency: "USD" })}</td>
             <td><button class="btn btn-danger" onclick="eliminarRegistro(${r.id})">X</button></td>`;
           tablaBody.appendChild(tr);
           if (esRetiro) sumaRetiros += Math.abs(r.total);
           else sumaEntradas += r.total;
         });
-        totalEntradas.textContent = sumaEntradas.toFixed(2);
-        totalRetiros.textContent = sumaRetiros.toFixed(2);
-        balanceFinal.textContent = (sumaEntradas - sumaRetiros).toFixed(2);
+        totalEntradas.textContent = sumaEntradas.toLocaleString("en-US", { style: "currency", currency: "USD" });
+        totalRetiros.textContent = sumaRetiros.toLocaleString("en-US", { style: "currency", currency: "USD" });
+        balanceFinal.textContent = (sumaEntradas - sumaRetiros).toLocaleString("en-US", { style: "currency", currency: "USD" });
 
         // Inventario
         inventario.innerHTML = "";
