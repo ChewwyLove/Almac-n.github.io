@@ -152,7 +152,7 @@
       <div class="row">
         <select id="itemSelectEntrada"></select>
         <input type="number" id="cantidadEntrada" placeholder="Cantidad" />
-        <input type="text" id="precioEntrada" placeholder="Precio (opcional)" />
+        <input type="number" id="precioEntrada" placeholder="Precio (opcional)" />
         <button class="btn" onclick="agregarRegistro()">➕ Añadir</button>
       </div>
       <p class="status" id="statusEntrada"></p>
@@ -183,9 +183,9 @@
         </table>
       </div>
       <div class="resumen">
-        <span>Entradas: <span id="totalEntradas">$0.00</span></span>
-        <span>Retiros: <span id="totalRetiros">$0.00</span></span>
-        <span>Balance: <span id="balanceFinal">$0.00</span></span>
+        <span>Entradas: $<span id="totalEntradas">0</span></span>
+        <span>Retiros: $<span id="totalRetiros">0</span></span>
+        <span>Balance: $<span id="balanceFinal">0</span></span>
       </div>
     </div>
 
@@ -200,29 +200,17 @@
       <h2>Catálogo de Precios</h2>
       <div class="row">
         <input type="text" id="nuevoObjeto" placeholder="Nombre del objeto" />
-        <input type="text" id="precioDefault" placeholder="Precio por defecto" />
+        <input type="number" id="precioDefault" placeholder="Precio por defecto" />
         <button class="btn" onclick="agregarObjeto()">➕ Añadir</button>
       </div>
       <ul id="listaObjetos"></ul>
     </div>
   </div>
 
-  <!-- SDK Supabase -->
+  <!-- SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    function formatoUSD(valor) {
-      return valor.toLocaleString('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        currencyDisplay: 'symbol'
-      });
-    }
-
-    function limpiarPrecio(texto) {
-      return parseFloat(texto.replace(/[^0-9.-]+/g, ""));
-    }
-
     window.onload = () => {
       const SUPABASE_URL = "https://vviflbcsksnecebtqady.supabase.co";
       const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2aWZsYmNza3NuZWNlYnRxYWR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0NjMzMzMsImV4cCI6MjA3MDAzOTMzM30.5ous_YueIifOJMhNzV6Uap1lex0Ud-d7GoaTZTJ2uX4";
@@ -238,17 +226,6 @@
       const listaObjetos = document.getElementById("listaObjetos");
       const statusEntrada = document.getElementById("statusEntrada");
       const statusRetiro = document.getElementById("statusRetiro");
-
-      document.getElementById("precioEntrada").addEventListener("blur", e => {
-        const val = limpiarPrecio(e.target.value);
-        if (!isNaN(val)) e.target.value = formatoUSD(val);
-      });
-
-      document.getElementById("precioDefault").addEventListener("blur", e => {
-        const val = limpiarPrecio(e.target.value);
-        if (!isNaN(val)) e.target.value = formatoUSD(val);
-      });
-
       let catalogo = {}, registros = [];
 
       async function cargarDatos() {
@@ -264,7 +241,7 @@
       async function agregarRegistro() {
         const nombre = itemSelectEntrada.value;
         const cantidad = parseInt(document.getElementById("cantidadEntrada").value);
-        const precioInput = limpiarPrecio(document.getElementById("precioEntrada").value);
+        const precioInput = parseFloat(document.getElementById("precioEntrada").value);
         const precio = !isNaN(precioInput) ? precioInput : catalogo[nombre];
         if (!nombre || isNaN(cantidad) || cantidad <= 0 || isNaN(precio)) return;
         const fecha = new Date().toISOString();
@@ -279,12 +256,14 @@
         const nombre = itemSelectRetiro.value;
         const cantidad = parseInt(document.getElementById("cantidadRetiro").value);
         if (!nombre || isNaN(cantidad) || cantidad <= 0) return;
+
         const disponible = registros.filter(r => r.nombre === nombre).reduce((sum, r) => sum + r.cantidad, 0);
         if (cantidad > disponible) {
           statusRetiro.textContent = "No hay suficiente stock";
           setTimeout(() => statusRetiro.textContent = "", 2000);
           return;
         }
+
         const precio = catalogo[nombre];
         const fecha = new Date().toISOString();
         const total = precio * -cantidad;
@@ -296,4 +275,94 @@
 
       async function agregarObjeto() {
         const nombre = document.getElementById("nuevoObjeto").value.trim();
-        const precio = limpiarPrecio(document.getElementById("preci
+        const precio = parseFloat(document.getElementById("precioDefault").value);
+        if (!nombre || isNaN(precio) || precio <= 0) return;
+        await supabase.from('catalogo').insert([{ nombre, precio }]);
+        document.getElementById("nuevoObjeto").value = "";
+        document.getElementById("precioDefault").value = "";
+        await cargarDatos();
+      }
+
+      async function eliminarObjeto(nombre) {
+        await supabase.from('catalogo').delete().eq('nombre', nombre);
+        await cargarDatos();
+      }
+
+      async function eliminarRegistro(id) {
+        await supabase.from('registros').delete().eq('id', id);
+        await cargarDatos();
+      }
+
+      function renderizar() {
+        // Historial
+        tablaBody.innerHTML = "";
+        let sumaEntradas = 0, sumaRetiros = 0;
+        registros.forEach(r => {
+          const esRetiro = r.cantidad < 0;
+          const tipoTexto = esRetiro ? `⬇ Retiro: ${r.nombre}` : `⬆ Entrada: ${r.nombre}`;
+          const clase = esRetiro ? 'retiro' : 'entrada';
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="${clase}">${tipoTexto}</td>
+            <td>${r.cantidad}</td>
+            <td>$${r.precio}</td>
+            <td>${new Date(r.fecha).toLocaleString()}</td>
+            <td>$${r.total}</td>
+            <td><button class="btn btn-danger" onclick="eliminarRegistro(${r.id})">X</button></td>`;
+          tablaBody.appendChild(tr);
+          if (esRetiro) sumaRetiros += Math.abs(r.total);
+          else sumaEntradas += r.total;
+        });
+        totalEntradas.textContent = sumaEntradas.toFixed(2);
+        totalRetiros.textContent = sumaRetiros.toFixed(2);
+        balanceFinal.textContent = (sumaEntradas - sumaRetiros).toFixed(2);
+
+        // Inventario
+        inventario.innerHTML = "";
+        const conteo = {};
+        registros.forEach(r => conteo[r.nombre] = (conteo[r.nombre] || 0) + r.cantidad);
+        const maxStock = Math.max(...Object.values(conteo), 1);
+        Object.entries(conteo).forEach(([o, c]) => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <div>${o}: ${c} unidades</div>
+            <div class="progress"><div class="progress-bar" style="width:${(c/maxStock)*100}%"></div></div>`;
+          inventario.appendChild(li);
+        });
+
+        // Catálogo
+        listaObjetos.innerHTML = "";
+        Object.entries(catalogo).forEach(([nombre, precio]) => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <div class="cat-item">
+              <span style="flex:2;text-align:left;">${nombre}</span>
+              <span style="flex:1;">$${precio}</span>
+              <button class="btn btn-danger" style="flex:0;" onclick="eliminarObjeto('${nombre}')">Eliminar</button>
+            </div>`;
+          listaObjetos.appendChild(li);
+        });
+
+        // Selects
+        [itemSelectEntrada, itemSelectRetiro].forEach(select => {
+          select.innerHTML = "";
+          Object.keys(catalogo).forEach(o => {
+            const opt = document.createElement("option");
+            opt.value = o;
+            opt.textContent = o;
+            select.appendChild(opt);
+          });
+        });
+      }
+
+      window.agregarRegistro = agregarRegistro;
+      window.retirarStock = retirarStock;
+      window.agregarObjeto = agregarObjeto;
+      window.eliminarObjeto = eliminarObjeto;
+      window.eliminarRegistro = eliminarRegistro;
+
+      cargarDatos();
+    };
+  </script>
+</body>
+</html>
